@@ -34,6 +34,8 @@ import org.junit.Test;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 // needed for the Scala tests to use scala.Long with this Java test
 @SuppressWarnings({"rawtypes", "unchecked"})
@@ -108,6 +110,20 @@ public class LongRidesUnitTest extends LongRidesTestBase {
         harness.processElement(endedThreeHoursLater.asStreamRecord());
 
         assertThat(resultingRideId()).isEqualTo(rideStarted.rideId);
+    }
+
+    @Test
+    public void shouldThrowLongRidesExceptionWhenStartTimeIsNotAvailableInEndEvent() {
+        TaxiRide rideStarted = startRide(1, false, BEGINNING);
+        TaxiRide endedThreeHoursLater = endRide(rideStarted, THREE_HOURS_LATER);
+        Exception exception = assertThrows(LongRidesException.class, () -> {
+            harness.processElement(rideStarted.asStreamRecord());
+            harness.processElement(endedThreeHoursLater.asStreamRecord());
+        });
+
+        String expectedMessage = "Start time is not available in end event";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedMessage));
     }
 
     @Test
